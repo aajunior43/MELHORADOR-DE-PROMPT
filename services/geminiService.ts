@@ -55,7 +55,12 @@ export const improvePrompt = async (
     'cot': "FORCE the use of **Chain-of-Thought (CoT)**. Instructions must require the model to think step-by-step or explain reasoning.",
     'few-shot': "FORCE the use of **Few-Shot Prompting**. You MUST invent realistic Input -> Output examples to guide the model.",
     'persona': "FORCE the use of **Persona/Role Prompting**. Define a highly specific expert persona.",
-    'decomposition': "FORCE the use of **Task Decomposition**. Break the prompt into a numbered list of sub-tasks."
+    'decomposition': "FORCE the use of **Task Decomposition**. Break the prompt into a numbered list of sub-tasks.",
+    'race': "FORCE the use of the **RACE Framework** (Role, Action, Context, Expectation). Structure the prompt explicitly with these headers.",
+    'ape': "FORCE the use of the **APE Framework** (Action, Purpose, Expectation). Keep it concise and action-oriented.",
+    'rise': "FORCE the use of the **RISE Framework** (Role, Input, Steps, Expectation). Useful for complex processing tasks.",
+    'tag': "FORCE the use of the **TAG Framework** (Task, Action, Goal). Use this for a direct, no-fluff structure.",
+    'bab': "FORCE the use of the **BAB Framework** (Before, After, Bridge). Ideal for storytelling, marketing, or transformation tasks."
   };
 
   const chosenInstruction = frameworkInstructions[selectedFramework];
@@ -77,6 +82,23 @@ export const improvePrompt = async (
     4. Fill 'usedTechnique' with the name of the technique.
     5. Fill 'techniqueExplanation' with a definition suitable for a student.
     6. Fill 'techniqueApplication' by pointing out exactly what parts of the new prompt correspond to the technique (e.g. "Added a 'Context' section to satisfy CO-STAR").
+
+    VARIABLE FORMATTING RULE (MANDATORY):
+    - Identify any variables, placeholders, or data inputs required from the user to execute the prompt (e.g., Topic, Age, Text to Analyze, Data).
+    - DO NOT embed these as placeholders like "[Insert Here]" in the middle of the text if possible.
+    - Instead, refer to them in the instructions and LIST THEM ALL AT THE VERY END of the 'improvedPrompt'.
+    - Use the format: "VARIABLE_NAME:" (Uppercase with colon, on a new line).
+    
+    Example of expected 'improvedPrompt' structure:
+    "
+    Act as a marketing expert. Create a campaign for the topic provided below targeting the specified audience...
+    ... (Rest of instructions) ...
+
+    --- PREENCHA ABAIXO ---
+    TEMA:
+    PÚBLICO_ALVO:
+    OBJETIVO:
+    "
   `;
 
   let prompt = "";
@@ -87,6 +109,7 @@ export const improvePrompt = async (
       "${currentText}"
       
       ENSURE THE GENERATED PROMPT IS IN PORTUGUESE (PT-BR).
+      REMEMBER TO PLACE INPUT VARIABLES AT THE END.
     `;
   } else {
     prompt = `
@@ -97,6 +120,7 @@ export const improvePrompt = async (
       
       Analyze weaknesses. Apply the selected framework strategies.
       ENSURE THE GENERATED PROMPT IS IN PORTUGUESE (PT-BR).
+      REMEMBER TO PLACE INPUT VARIABLES AT THE END.
     `;
   }
 

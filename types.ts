@@ -1,7 +1,18 @@
 
 export type Mode = 'create' | 'improve';
 export type Strategy = 'iterations' | 'score';
-export type PromptFramework = 'auto' | 'costar' | 'cot' | 'few-shot' | 'persona' | 'decomposition';
+export type PromptFramework = 
+  | 'auto' 
+  | 'costar' 
+  | 'cot' 
+  | 'few-shot' 
+  | 'persona' 
+  | 'decomposition' 
+  | 'race' 
+  | 'ape' 
+  | 'rise' 
+  | 'tag' 
+  | 'bab';
 
 export interface PromptVersion {
   step: number;

@@ -142,7 +142,7 @@ const App: React.FC = () => {
             </h1>
           </div>
           <div className="text-xs font-mono text-slate-500 hidden sm:block neo-pressed-sm px-3 py-1 rounded-lg">
-            v3.0 // PRO
+            v3.1 // PRO
           </div>
         </div>
       </header>
@@ -262,11 +262,22 @@ const App: React.FC = () => {
                     className="w-full appearance-none neo-pressed rounded-xl p-4 bg-transparent text-sm font-bold text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
                   >
                     <option value="auto">🤖 Auto (IA Decide)</option>
-                    <option value="costar">★ CO-STAR (Context, Obj, Style...)</option>
-                    <option value="cot">🧠 Chain of Thought (Raciocínio)</option>
-                    <option value="few-shot">🎯 Few-Shot (Exemplos Práticos)</option>
-                    <option value="persona">🎭 Persona (Atuar como Expert)</option>
-                    <option value="decomposition">🧱 Decomposition (Dividir Tarefas)</option>
+                    <optgroup label="Avançados">
+                      <option value="costar">★ CO-STAR (Context, Obj, Style...)</option>
+                      <option value="race">🏁 RACE (Role, Action, Context...)</option>
+                      <option value="rise">⚡ RISE (Role, Input, Steps...)</option>
+                    </optgroup>
+                    <optgroup label="Técnicas">
+                      <option value="cot">🧠 Chain of Thought (Raciocínio)</option>
+                      <option value="few-shot">🎯 Few-Shot (Exemplos Práticos)</option>
+                      <option value="decomposition">🧱 Decomposition (Sub-tarefas)</option>
+                      <option value="bab">🌈 BAB (Before, After, Bridge)</option>
+                    </optgroup>
+                    <optgroup label="Simples & Direto">
+                      <option value="ape">🦍 APE (Action, Purpose, Exp)</option>
+                      <option value="tag">🏷️ TAG (Task, Action, Goal)</option>
+                      <option value="persona">🎭 Persona (Atuar como Expert)</option>
+                    </optgroup>
                   </select>
                   <Settings2 className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
