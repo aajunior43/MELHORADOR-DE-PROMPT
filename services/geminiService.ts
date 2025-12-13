@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { PromptResponseSchema, PromptFramework } from "../types";
+import { PromptResponseSchema, OptimizationConfig } from "../types";
 
 // Initialize the API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -42,9 +41,8 @@ const responseSchema: Schema = {
 
 export const improvePrompt = async (
   currentText: string,
-  isCreationMode: boolean,
   iteration: number,
-  selectedFramework: PromptFramework = 'auto'
+  config: OptimizationConfig
 ): Promise<PromptResponseSchema> => {
   const model = "gemini-2.5-flash";
 
@@ -63,8 +61,9 @@ export const improvePrompt = async (
     'bab': "FORCE the use of the **BAB Framework** (Before, After, Bridge). Ideal for storytelling, marketing, or transformation tasks."
   };
 
-  const chosenInstruction = frameworkInstructions[selectedFramework];
+  const chosenInstruction = frameworkInstructions[config.selectedTechnique];
 
+  // Base System Instruction
   let systemInstruction = `
     You are an Expert Meta-Prompt Engineer.
     Your goal is to improve the user's prompt using advanced prompt engineering techniques.
@@ -72,46 +71,95 @@ export const improvePrompt = async (
     CRITICAL INSTRUCTION: ALL OUTPUT MUST BE IN PORTUGUESE (BRAZIL).
     The 'improvedPrompt', 'critique', 'changes', 'techniqueExplanation', and 'techniqueApplication' fields MUST be written in fluent, professional Portuguese.
 
-    STRATEGY:
-    ${chosenInstruction}
-
-    GENERAL RULES:
-    1. If the prompt is simple, make it professional.
-    2. If the prompt is vague, add context and constraints.
-    3. Always aim for clarity, specificity, and robustness.
-    4. Fill 'usedTechnique' with the name of the technique.
-    5. Fill 'techniqueExplanation' with a definition suitable for a student.
-    6. Fill 'techniqueApplication' by pointing out exactly what parts of the new prompt correspond to the technique (e.g. "Added a 'Context' section to satisfy CO-STAR").
-
     VARIABLE FORMATTING RULE (MANDATORY):
-    - Identify any variables, placeholders, or data inputs required from the user to execute the prompt (e.g., Topic, Age, Text to Analyze, Data).
-    - DO NOT embed these as placeholders like "[Insert Here]" in the middle of the text if possible.
-    - Instead, refer to them in the instructions and LIST THEM ALL AT THE VERY END of the 'improvedPrompt'.
+    - Identify any variables, placeholders, or data inputs required from the user.
+    - LIST THEM ALL AT THE VERY END of the 'improvedPrompt'.
     - Use the format: "VARIABLE_NAME:" (Uppercase with colon, on a new line).
-    
-    Example of expected 'improvedPrompt' structure:
-    "
-    Act as a marketing expert. Create a campaign for the topic provided below targeting the specified audience...
-    ... (Rest of instructions) ...
-
-    --- PREENCHA ABAIXO ---
-    TEMA:
-    PÚBLICO_ALVO:
-    OBJETIVO:
-    "
   `;
 
   let prompt = "";
+  let temp = 0.7;
 
-  if (isCreationMode && iteration === 1) {
+  if (config.mode === 'create' && iteration === 1) {
+    // CREATE MODE LOGIC
+    // Adjust creativity based on slider
+    const creativityVal = config.creativityLevel || 50;
+    let creativityInstruction = "";
+    
+    if (creativityVal < 30) {
+      creativityInstruction = "STYLE: Strictly Professional, Concise, Technical, No Fluff. Direct instructions.";
+      temp = 0.3;
+    } else if (creativityVal > 70) {
+      creativityInstruction = "STYLE: Highly Creative, Expansive, Descriptive, Engaging, Narrative-driven.";
+      temp = 0.9;
+    } else {
+      creativityInstruction = "STYLE: Balanced, Professional yet Engaging, Clear structure.";
+      temp = 0.7;
+    }
+
+    systemInstruction += `\nSTRATEGY: ${chosenInstruction}\n${creativityInstruction}`;
     prompt = `
       Task: CREATE a professional prompt based on this TOPIC/IDEA:
       "${currentText}"
       
+      Ensure the prompt follows the requested style (Creativity Level: ${creativityVal}/100).
       ENSURE THE GENERATED PROMPT IS IN PORTUGUESE (PT-BR).
-      REMEMBER TO PLACE INPUT VARIABLES AT THE END.
     `;
+
+  } else if (config.mode === 'evolution') {
+    // EVOLUTION MODE LOGIC
+    const intensity = config.mutationIntensity || 'medium';
+    let mutationInstruction = "";
+    
+    if (intensity === 'low') {
+        mutationInstruction = "MUTATION INTENSITY: LOW. Make conservative improvements. Refine wording, fix logic, add minor constraints. Do not change the core structure drastically.";
+        temp = 0.6;
+    } else if (intensity === 'medium') {
+        mutationInstruction = "MUTATION INTENSITY: MEDIUM. Introduce noticeable structural changes. Swap the framework if better. Add new sections (e.g., 'Examples', 'Anti-Hallucination').";
+        temp = 0.8;
+    } else {
+        mutationInstruction = "MUTATION INTENSITY: HIGH (EXTREME). Be radical. Completely re-architecture the prompt. Change the Persona entirely. Add complex logic steps. Take risks.";
+        temp = 1.0;
+    }
+
+    systemInstruction = `
+      You are a GENETIC ALGORITHM ENGINE for Prompts.
+      
+      Your goal is to evolve the prompt through generations using biological concepts:
+      
+      1. **DIVERSITY (Internal Generation)**: 
+         - Internally generate 2 distinct variants of the input prompt.
+      
+      2. **CROSSOVER (Recombination)**:
+         - Merge the best elements of variants.
+      
+      3. **MUTATION (Random Evolution)**:
+         - ${mutationInstruction}
+         - Introduce a technique NOT present in the original.
+      
+      4. **SURVIVAL (Selection)**:
+         - The final output MUST be the mutated survivor.
+
+      OUTPUT INSTRUCTIONS (PT-BR):
+      - 'usedTechnique': Name it "🧬 Mutação (${intensity === 'high' ? 'Extrema' : intensity === 'medium' ? 'Padrão' : 'Leve'}): [Nome da Técnica]".
+      - 'changes': Describe the mutation added.
+      - 'improvedPrompt': The final evolved organism.
+      
+      MANDATORY: PLACE INPUT VARIABLES AT THE END OF THE PROMPT.
+    `;
+    
+    prompt = `
+      GENETIC EVOLUTION CYCLE #${iteration}.
+      
+      Organism (Current Prompt):
+      "${currentText}"
+      
+      EXECUTE: Generate Variants -> Crossover -> Mutate -> Select Survivor.
+    `;
+
   } else {
+    // IMPROVE MODE LOGIC (Standard)
+    systemInstruction += `\nSTRATEGY: ${chosenInstruction}`;
     prompt = `
       Task: IMPROVE the following prompt iteratively.
       
@@ -119,8 +167,6 @@ export const improvePrompt = async (
       "${currentText}"
       
       Analyze weaknesses. Apply the selected framework strategies.
-      ENSURE THE GENERATED PROMPT IS IN PORTUGUESE (PT-BR).
-      REMEMBER TO PLACE INPUT VARIABLES AT THE END.
     `;
   }
 
@@ -132,7 +178,7 @@ export const improvePrompt = async (
         responseMimeType: "application/json",
         responseSchema: responseSchema,
         systemInstruction: systemInstruction,
-        temperature: 0.7, 
+        temperature: temp,
       },
     });
 
@@ -148,24 +194,20 @@ export const improvePrompt = async (
 };
 
 export const testPrompt = async (
-  systemPromptToTest: string,
-  userMessage: string
+  promptTemplate: string,
+  userInput: string
 ): Promise<string> => {
   const model = "gemini-2.5-flash";
 
   try {
     const response = await ai.models.generateContent({
       model,
-      contents: userMessage,
-      config: {
-        systemInstruction: systemPromptToTest,
-        temperature: 0.7,
-      },
+      contents: `${promptTemplate}\n\n${userInput}`,
     });
 
-    return response.text || "Sem resposta.";
+    return response.text || "";
   } catch (error) {
-    console.error("Test Drive Error:", error);
-    return "Erro ao testar o prompt. Verifique se a entrada é válida.";
+    console.error("Gemini API Error (Test):", error);
+    throw error;
   }
 };
